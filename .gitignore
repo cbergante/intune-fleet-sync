@@ -1,0 +1,11 @@
+logs/
+*.log
+.env
+.env.*
+*.pfx
+*.p12
+*.pem
+*.key
+.vscode/
+.DS_Store
+Thumbs.db
