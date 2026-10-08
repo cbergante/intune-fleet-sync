@@ -1,0 +1,30 @@
+name: Validate PowerShell
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Parse and analyze PowerShell
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Install-Module PSScriptAnalyzer -RequiredVersion 1.24.0 -Scope CurrentUser -Force
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Join-Path $PWD 'Sync-IntuneFleet.ps1'), [ref]$tokens, [ref]$parseErrors
+          ) | Out-Null
+          if ($parseErrors.Count -gt 0) {
+            $parseErrors | Format-List
+            throw 'PowerShell syntax validation failed.'
+          }
+          $findings = @(Invoke-ScriptAnalyzer -Path ./Sync-IntuneFleet.ps1 -Severity Error)
+          if ($findings.Count -gt 0) {
+            $findings | Format-Table -AutoSize
+            throw 'Static analysis failed.'
+          }
